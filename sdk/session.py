@@ -9,7 +9,7 @@ logger = logging.getLogger('git-sdk')
 
 class GitSession(requests.Session):
 	API_DOMAIN = 'https://api.github.com'
-	def __init__(self, user=None, password=None, client_id=None, client_secret=None, pat=None, **kwargs):
+	def __init__(self, user=None, password=None, client_id=None, client_secret=None, pat=None, headers={}, **kwargs):
 		super(GitSession, self).__init__(**kwargs)
 		self.user = user
 		self.password = password
@@ -17,6 +17,7 @@ class GitSession(requests.Session):
 		self.client_secret = client_secret
 		self.pat = pat
 		self.closed = False
+		self.headers = headers
 		self.authenticate()
 
 	def authenticate(self):
@@ -32,6 +33,7 @@ class GitSession(requests.Session):
 			headers = {
 				'Authorization': 'Basic ' + base64.b64encode(bytearray('%s:%s' % (self.user, self.password), 'utf-8')).decode('utf-8')
 			}
+			headers.update(self.headers)
 			resp = super(GitSession, self).post(url, data=data, headers=headers)
 			if resp.status_code < 200 or resp.status_code > 299:
 				raise Exception(resp.text)
@@ -53,7 +55,7 @@ class GitSession(requests.Session):
 			else:
 				logger.debug('Failed to delete oauth authorization %s: %s', self.oauth_authorization['id'], resp.text)
 
-	def get_headers(self, auth_type=None, **kwargs):
+	def get_headers(self, auth_type=None, headers={}):
 		auth_type = auth_type if auth_type else self.auth_type
 		if auth_type == 'BASIC':
 			auth_str = 'Basic ' + base64.b64encode(bytearray('%s:%s' % (self.user, self.password), 'utf-8')).decode('utf-8')
@@ -62,15 +64,16 @@ class GitSession(requests.Session):
 		elif auth_type == 'PAT':
 			auth_str = 'token ' + self.pat
 
-		headers = {
+		api_headers = {
 			'Authorization': auth_str
 		}
 
-		headers.update(kwargs.get('headers', {}))
+		api_headers.update(self.headers)
+		api_headers.update(headers)
 
-		return headers
+		return api_headers
 
-	def make_request(self, endpoint, auth_type=None, data=None, **kwargs):
+	def make_request(self, endpoint, auth_type=None, data=None, headers={}, **kwargs):
 		if self.closed:
 			logger.debug('Request on a closed session, Reauthenticating session')
 			self.authenticate()
@@ -85,7 +88,7 @@ class GitSession(requests.Session):
 		if isinstance(data, (dict, list)):
 			data=json.dumps(data)
 		logger.debug('%s %s', caller_name.upper(), url)
-		return target_func(url, data=data, headers=self.get_headers(auth_type=auth_type, **kwargs), **kwargs)
+		return target_func(url, data=data, headers=self.get_headers(auth_type=auth_type, headers=headers), **kwargs)
 
 	def get(self, endpoint, auth_type=None, **kwargs):
 		return self.make_request(endpoint, auth_type=auth_type, **kwargs)
