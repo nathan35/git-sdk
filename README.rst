@@ -37,3 +37,13 @@ POST eg.
 >>> 
 >>> session.post('authorizations', data={'client_id': '9db6e44220ce9313f3e5', 'client_secret': '0ff6e554b4bdc4fb6fb29e2a1c2541df815ac506'}, auth_type='BASIC', headers={'Content-Encoding':'gzip'})
 <Response [201]>
+
+Headers can be set while creating the session. Such headers will be passed with every request. Headers can be passed separately for each request as well
+
+.. code-block:: python
+>>> from sdk import GitSession
+>>> session = GitSession('senthilnaveen91', 'Rajarajan1!', '9db6e44220ce9313f3e5', '0ff6e554b4bdc4fb6fb29e2a1c2541df815ac506', headers= {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'})
+>>> session.get('user')
+<Response [200]>
+>>> session.get('user', headers= {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'})
+<Response [200]>
