@@ -34,7 +34,7 @@ class GitSession(requests.Session):
 			}
 			resp = super(GitSession, self).post(url, data=data, headers=headers)
 			if resp.status_code < 200 or resp.status_code > 299:
-				raise Exception(resp.txt)
+				raise Exception(resp.text)
 			resp_json = json.loads(resp.text)
 			logger.debug('Received oauth token %s', resp_json)
 			self.oauth_authorization = resp_json
@@ -53,7 +53,7 @@ class GitSession(requests.Session):
 			else:
 				logger.debug('Failed to delete oauth authorization %s: %s', self.oauth_authorization['id'], resp.text)
 
-	def get_headers(self, auth_type=None):
+	def get_headers(self, auth_type=None, **kwargs):
 		auth_type = auth_type if auth_type else self.auth_type
 		if auth_type == 'BASIC':
 			auth_str = 'Basic ' + base64.b64encode(bytearray('%s:%s' % (self.user, self.password), 'utf-8')).decode('utf-8')
@@ -65,6 +65,8 @@ class GitSession(requests.Session):
 		headers = {
 			'Authorization': auth_str
 		}
+
+		headers.update(kwargs.get('headers', {}))
 
 		return headers
 
